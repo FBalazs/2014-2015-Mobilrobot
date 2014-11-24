@@ -8,7 +8,6 @@ import android.widget.Toast;
 
 public class ActivityMain extends Activity {
 	Camera camera;
-	ThreadMain thread;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -28,8 +27,8 @@ public class ActivityMain extends Activity {
 			this.finish();
 		} else {
 			this.camera.lock();
-			this.thread = new ThreadMain(this.camera);
-			this.thread.start();
+			this.camera.setPreviewCallback(new CameraCallback());
+			this.camera.startPreview();
 		}
 	}
 	
@@ -37,18 +36,12 @@ public class ActivityMain extends Activity {
 	protected void onStop() {
 		Log.d("ActivityMain.java", "onStop()");
 		super.onStop();
-		if(this.thread != null) {
-			this.thread.isRunning = false;
-			try {
-				this.thread.join();
-			} catch (InterruptedException e) {
-				Log.e("ActivityMain.java", e.toString());
-				e.printStackTrace();
-			}
-		}
 		if(this.camera != null) {
+			this.camera.setPreviewCallback(null);
+			this.camera.stopPreview();
 			this.camera.unlock();
 			this.camera.release();
+			this.camera = null;
 		}
 	}
 	
