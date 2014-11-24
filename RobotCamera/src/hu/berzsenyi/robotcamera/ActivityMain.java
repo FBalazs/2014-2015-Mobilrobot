@@ -1,53 +1,78 @@
 package hu.berzsenyi.robotcamera;
 
+import java.net.SocketAddress;
+
 import android.app.Activity;
 import android.hardware.Camera;
+import android.hardware.Camera.PreviewCallback;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Toast;
 
-public class ActivityMain extends Activity {
-	Camera camera;
+public class ActivityMain extends Activity implements PreviewCallback, NetworkTCPServer.IConnectionListener {
+	CameraHandler cameraHandler;
+	NetworkTCPServer netTCP;
+	NetworkUDPServer netUDP;
+	byte[] netBuffer = null;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
-		Log.d("ActivityMain.java", "onCreate()");
+		Log.d(this.getClass().getName(), "onCreate()");
 		super.onCreate(savedInstanceState);
 		this.setContentView(R.layout.activity_main);
-	}
-	
-	@Override
-	protected void onStart() {
-		Log.d("ActivityMain.java", "onStart()");
-		super.onStart();
-		this.camera = Camera.open();
-		if(this.camera == null) {
-			Log.e("ActivityMain.java", "Couldn't open camera!");
+		
+		this.cameraHandler = new CameraHandler();
+		this.cameraHandler.lockCamera();
+		if(this.cameraHandler.camera == null) {
+			Log.e(this.getClass().getName(), "Couldn't open camera!");
 			Toast.makeText(this, "Couldn't open camera!", Toast.LENGTH_LONG).show();
 			this.finish();
 		} else {
-			this.camera.lock();
-			this.camera.setPreviewCallback(new CameraCallback());
-			this.camera.startPreview();
+			this.cameraHandler.addDefaultPreviewBuffer();
+			this.cameraHandler.camera.setPreviewCallbackWithBuffer(this);
+			this.cameraHandler.camera.startPreview();
 		}
+		this.netTCP = new NetworkTCPServer();
+		this.netTCP.open(8080);
+		this.netUDP = new NetworkUDPServer();
+		this.netUDP.open(8080);
 	}
 	
 	@Override
-	protected void onStop() {
-		Log.d("ActivityMain.java", "onStop()");
-		super.onStop();
-		if(this.camera != null) {
-			this.camera.setPreviewCallback(null);
-			this.camera.stopPreview();
-			this.camera.unlock();
-			this.camera.release();
-			this.camera = null;
+	public void onConnection(SocketAddress address) {
+		this.netUDP.clientAddress = address;
+	}
+	
+	@Override
+	public void onPreviewFrame(byte[] data, Camera camera) {
+		Log.d(this.getClass().getName(), "onPreviewFrame()");
+		
+		if(this.netTCP.connected()) {
+			if(this.netBuffer == null)
+				this.netBuffer = new byte[this.cameraHandler.getPreviewWidth()*this.cameraHandler.getPreviewHeight()];
+			for(int i = 0; i < this.netBuffer.length; i++)
+				if(i%2 == 0)
+					this.netBuffer[i] = data[i*3/2];
+				else
+					this.netBuffer[i] = (byte) (data[i*3/2] >> 4);
+			//this.netUDP.send(this.netBuffer);
+			this.netUDP.send(new byte[]{0, 1, 2, 3});
 		}
+		
+		camera.addCallbackBuffer(data);
 	}
 	
 	@Override
 	protected void onDestroy() {
-		Log.d("ActivityMain.java", "onDestroy()");
+		Log.d(this.getClass().getName(), "onDestroy()");
 		super.onDestroy();
+		
+		if(this.cameraHandler.camera != null) {
+			this.cameraHandler.camera.setPreviewCallback(null);
+			this.cameraHandler.camera.stopPreview();
+			this.cameraHandler.releaseCamera();
+		}
+		this.netTCP.close();
+		this.netUDP.close();
 	}
 }
