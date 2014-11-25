@@ -1,8 +1,11 @@
 package hu.berzsenyi.robot.camera;
 
-import hu.berzsenyi.robot.net.NetworkHandler;
-import hu.berzsenyi.robotcamera.R;
+import java.net.InetSocketAddress;
 
+import hu.berzsenyi.robot.net.IClientConnectionListener;
+import hu.berzsenyi.robot.net.NetworkHandler;
+import hu.berzsenyi.robot.net.packet.PacketStreamInfo;
+import hu.berzsenyi.robotcamera.R;
 import android.app.Activity;
 import android.hardware.Camera;
 import android.hardware.Camera.PreviewCallback;
@@ -10,7 +13,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.widget.Toast;
 
-public class ActivityMain extends Activity implements PreviewCallback {
+public class ActivityMain extends Activity implements PreviewCallback, IClientConnectionListener {
 	CameraHandler cameraHandler;
 	NetworkHandler net;
 	byte[] netBuffer = null;
@@ -33,7 +36,13 @@ public class ActivityMain extends Activity implements PreviewCallback {
 			this.cameraHandler.camera.startPreview();
 		}
 		this.net = new NetworkHandler();
+		this.net.setClientConnectionListener(this);
 		this.net.bind(8080);
+	}
+	
+	@Override
+	public void onClientConnected(InetSocketAddress address) {
+		this.net.send(new PacketStreamInfo(0, this.cameraHandler.getPreviewWidth(), this.cameraHandler.getPreviewHeight()), true);
 	}
 	
 	@Override
@@ -51,10 +60,7 @@ public class ActivityMain extends Activity implements PreviewCallback {
 					this.netBuffer[i] = data[i*3/2];
 				else
 					this.netBuffer[i] = (byte) (data[i*3/2] >> 4);
-//			this.net.send(this.netBuffer, false);
-			
-//			this.net.send(new byte[]{0, 1, 2, 3}, false);
-//			this.net.send("hello\n".getBytes(), true);
+//			this.net.send(new PacketStreamInfo(0, 5, 6), false);
 		}
 		
 		camera.addCallbackBuffer(data);

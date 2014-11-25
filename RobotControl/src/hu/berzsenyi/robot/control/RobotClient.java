@@ -2,8 +2,6 @@ package hu.berzsenyi.robot.control;
 
 import hu.berzsenyi.robot.net.NetworkHandler;
 
-import java.net.DatagramPacket;
-
 public class RobotClient implements Runnable {
 	boolean isRunning;
 	NetworkHandler net;
@@ -23,20 +21,8 @@ public class RobotClient implements Runnable {
 	
 	public void update() {
 //		System.out.println("update()");
-		while(0 < this.net.availableTcp()) {
-			int b = this.net.readTcp();
-			if(b == (byte)'\n') {
-				this.processMsg(this.currentMsg.toString());
-				this.currentMsg = new StringBuilder();
-			}
-			else
-				this.currentMsg.append(b);
-		}
-		while(0 < this.net.availableUdp()) {
-			DatagramPacket pkt = this.net.readUdp();
-			
-//			System.out.println("udp "+pkt.getLength());
-		}
+		for(int i = 0; i < this.net.packetsReceived(); i++)
+			this.net.pollPacket().handle();
 	}
 	
 	public void render() {
@@ -53,7 +39,7 @@ public class RobotClient implements Runnable {
 	public void run() {
 		this.create();
 		this.isRunning = true;
-		while(this.isRunning) {
+		while(this.isRunning && this.net.open) {
 			long time = System.currentTimeMillis();
 			this.update();
 			this.render();

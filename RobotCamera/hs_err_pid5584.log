@@ -1,0 +1,131 @@
+#
+# A fatal error has been detected by the Java Runtime Environment:
+#
+#  Internal Error (javaClasses.cpp:126), pid=5584, tid=4336
+#  fatal error: Invalid layout of preloaded class
+#
+# JRE version:  (8.0_20-b26) (build )
+# Java VM: Java HotSpot(TM) 64-Bit Server VM (25.20-b23 mixed mode windows-amd64 compressed oops)
+# Failed to write core dump. Minidumps are not enabled by default on client versions of Windows
+#
+# If you would like to submit a bug report, please visit:
+#   http://bugreport.sun.com/bugreport/crash.jsp
+#
+
+---------------  T H R E A D  ---------------
+
+Current thread (0x00000000001cd800):  JavaThread "Unknown thread" [_thread_in_vm, id=4336, stack(0x0000000002360000,0x0000000002460000)]
+
+Stack: [0x0000000002360000,0x0000000002460000]
+Native frames: (J=compiled Java code, j=interpreted, Vv=VM code, C=native code)
+V  [jvm.dll+0x3152fa]
+V  [jvm.dll+0x265d03]
+V  [jvm.dll+0x266943]
+V  [jvm.dll+0x25e1e6]
+V  [jvm.dll+0x5e64c]
+V  [jvm.dll+0x5e743]
+V  [jvm.dll+0x7316a]
+V  [jvm.dll+0x734c8]
+V  [jvm.dll+0xe3937]
+V  [jvm.dll+0xe3cc6]
+V  [jvm.dll+0x1f89d7]
+V  [jvm.dll+0x229fc4]
+V  [jvm.dll+0x14c6f1]
+C  [javaw.exe+0x20c6]
+C  [javaw.exe+0xc9eb]
+C  [javaw.exe+0xca7f]
+C  [kernel32.dll+0x159ed]
+C  [ntdll.dll+0x2c541]
+
+
+---------------  P R O C E S S  ---------------
+
+Java Threads: ( => current thread )
+
+Other Threads:
+
+=>0x00000000001cd800 (exited) JavaThread "Unknown thread" [_thread_in_vm, id=4336, stack(0x0000000002360000,0x0000000002460000)]
+
+VM state:not at safepoint (not fully initialized)
+
+VM Mutex/Monitor currently owned by a thread: None
+
+GC Heap History (0 events):
+No events
+
+Deoptimization events (0 events):
+No events
+
+Internal exceptions (0 events):
+No events
+
+Events (10 events):
+Event: 0.067 loading class java/lang/CharSequence done
+Event: 0.068 loading class java/lang/String done
+Event: 0.068 loading class java/lang/Class
+Event: 0.068 loading class java/lang/reflect/AnnotatedElement
+Event: 0.068 loading class java/lang/reflect/AnnotatedElement done
+Event: 0.068 loading class java/lang/reflect/GenericDeclaration
+Event: 0.068 loading class java/lang/reflect/GenericDeclaration done
+Event: 0.068 loading class java/lang/reflect/Type
+Event: 0.068 loading class java/lang/reflect/Type done
+Event: 0.068 loading class java/lang/Class done
+
+
+Dynamic libraries:
+0x000000013f670000 - 0x000000013f6a4000 	C:\Program Files\Java\jre1.8.0_20\bin\javaw.exe
+0x0000000077340000 - 0x00000000774e9000 	C:\Windows\SYSTEM32\ntdll.dll
+0x0000000077220000 - 0x000000007733f000 	C:\Windows\system32\kernel32.dll
+0x000007fefd430000 - 0x000007fefd49c000 	C:\Windows\system32\KERNELBASE.dll
+0x000007fefe8c0000 - 0x000007fefe99b000 	C:\Windows\system32\ADVAPI32.dll
+0x000007fefedd0000 - 0x000007fefee6f000 	C:\Windows\system32\msvcrt.dll
+0x000007feff2e0000 - 0x000007feff2ff000 	C:\Windows\SYSTEM32\sechost.dll
+0x000007feff300000 - 0x000007feff42d000 	C:\Windows\system32\RPCRT4.dll
+0x0000000077120000 - 0x000000007721a000 	C:\Windows\system32\USER32.dll
+0x000007fefd4c0000 - 0x000007fefd527000 	C:\Windows\system32\GDI32.dll
+0x000007fefeca0000 - 0x000007fefecae000 	C:\Windows\system32\LPK.dll
+0x000007fefee70000 - 0x000007fefef39000 	C:\Windows\system32\USP10.dll
+0x000007fefb620000 - 0x000007fefb814000 	C:\Windows\WinSxS\amd64_microsoft.windows.common-controls_6595b64144ccf1df_6.0.7601.17514_none_fa396087175ac9ac\COMCTL32.dll
+0x000007fefecb0000 - 0x000007fefed21000 	C:\Windows\system32\SHLWAPI.dll
+0x000007feff120000 - 0x000007feff14e000 	C:\Windows\system32\IMM32.DLL
+0x000007fefd5d0000 - 0x000007fefd6d9000 	C:\Windows\system32\MSCTF.dll
+0x00000000553e0000 - 0x00000000554b2000 	C:\Program Files\Java\jre1.8.0_20\bin\msvcr100.dll
+0x0000000054b80000 - 0x00000000553d8000 	C:\Program Files\Java\jre1.8.0_20\bin\server\jvm.dll
+0x000007fef29a0000 - 0x000007fef29a9000 	C:\Windows\system32\WSOCK32.dll
+0x000007fefec50000 - 0x000007fefec9d000 	C:\Windows\system32\WS2_32.dll
+0x000007feff430000 - 0x000007feff438000 	C:\Windows\system32\NSI.dll
+0x000007fefb220000 - 0x000007fefb25b000 	C:\Windows\system32\WINMM.dll
+0x0000000077510000 - 0x0000000077517000 	C:\Windows\system32\PSAPI.DLL
+0x000000005ef00000 - 0x000000005ef0f000 	C:\Program Files\Java\jre1.8.0_20\bin\verify.dll
+0x0000000057fc0000 - 0x0000000057fe8000 	C:\Program Files\Java\jre1.8.0_20\bin\java.dll
+0x000000005bd40000 - 0x000000005bd56000 	C:\Program Files\Java\jre1.8.0_20\bin\zip.dll
+0x000007fef6410000 - 0x000007fef6535000 	C:\Windows\system32\dbghelp.dll
+
+VM Arguments:
+jvm_args: -Dfile.encoding=Cp1250 -Xbootclasspath:D:\Program Files\Android SDK\platforms\android-19\android.jar 
+java_command: hu.berzsenyi.robot.control.RobotClient
+java_class_path (initial): D:\GitHub\2014-2015-Mobilrobot\RobotCamera\bin\classes;D:\GitHub\2014-2015-Mobilrobot\RobotCamera\libs\android-support-v4.jar
+Launcher Type: SUN_STANDARD
+
+Environment Variables:
+JAVA_HOME=C:\Program Files\Java\jdk1.8.0_05
+PATH=C:\ProgramData\Oracle\Java\javapath;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\Program Files (x86)\AMD APP\bin\x86_64;C:\Program Files (x86)\AMD APP\bin\x86;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Program Files (x86)\ATI Technologies\ATI.ACE\Core-Static
+USERNAME=FBalazs
+OS=Windows_NT
+PROCESSOR_IDENTIFIER=AMD64 Family 18 Model 1 Stepping 0, AuthenticAMD
+
+
+
+---------------  S Y S T E M  ---------------
+
+OS: Windows 7 , 64 bit Build 7601 Service Pack 1
+
+CPU:total 4 (4 cores per cpu, 1 threads per core) family 18 model 1 stepping 0, cmov, cx8, fxsr, mmx, sse, sse2, sse3, popcnt, mmxext, 3dnowpref, lzcnt, sse4a, tsc, tscinvbit, tscinv
+
+Memory: 4k page, physical 7843580k(3979024k free), swap 15685296k(11326940k free)
+
+vm_info: Java HotSpot(TM) 64-Bit Server VM (25.20-b23) for windows-amd64 JRE (1.8.0_20-b26), built on Jul 30 2014 13:51:23 by "java_re" with MS VC++ 10.0 (VS2010)
+
+time: Tue Nov 25 21:24:33 2014
+elapsed time: 0 seconds (0d 0h 0m 0s)
+
