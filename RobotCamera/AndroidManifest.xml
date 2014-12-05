@@ -5,6 +5,7 @@
     android:versionName="1.0" >
 	
     <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.INTERNET" />
     
     <uses-feature android:name="android.hardware.camera" />
@@ -19,7 +20,7 @@
         android:label="@string/app_name"
         android:theme="@style/AppTheme" >
         <activity
-            android:name="hu.berzsenyi.robot.camera.ActivityMain"
+            android:name="hu.berzsenyi.mr14.camera.ActivityMain"
             android:label="@string/app_name" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

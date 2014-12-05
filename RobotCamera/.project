@@ -30,4 +30,11 @@
 		<nature>com.android.ide.eclipse.adt.AndroidNature</nature>
 		<nature>org.eclipse.jdt.core.javanature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>src-lib</name>
+			<type>2</type>
+			<location>D:/GitHub/2014-2015-Mobilrobot/RobotLibrary/src</location>
+		</link>
+	</linkedResources>
 </projectDescription>

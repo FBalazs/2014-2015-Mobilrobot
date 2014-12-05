@@ -1,4 +1,4 @@
-package hu.berzsenyi.robot.net.packet;
+package hu.berzsenyi.mr14.net.packet;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -19,12 +19,6 @@ public class Packet {
 	}
 	
 	public void write(DataOutputStream out) throws IOException {
-		out.writeInt(this.type);
-		out.writeLong(this.id);
-		out.writeInt(this.length);
-	}
-	
-	public void handle() {
 		
 	}
 }

@@ -1,6 +1,6 @@
-package hu.berzsenyi.robot.net;
+package hu.berzsenyi.mr14.net;
 
-import hu.berzsenyi.robot.net.packet.Packet;
+import hu.berzsenyi.mr14.net.packet.Packet;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
