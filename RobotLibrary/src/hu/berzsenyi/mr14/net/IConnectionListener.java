@@ -4,5 +4,5 @@ import java.net.InetSocketAddress;
 
 public interface IConnectionListener {
 	public void onConnected(IConnection connection, InetSocketAddress remoteAddr);
-	public void onDisconnected();
+	public void onDisconnected(IConnection connection);
 }

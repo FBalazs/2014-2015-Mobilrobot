@@ -8,6 +8,7 @@ import hu.berzsenyi.mr14.net.IConnectionListener;
 import hu.berzsenyi.mr14.net.TCPConnection;
 import hu.berzsenyi.mr14.net.TCPMessage;
 import hu.berzsenyi.mr14.net.UDPConnection;
+import hu.berzsenyi.mr14.net.msg.MsgQuality;
 import hu.berzsenyi.robotcamera.R;
 import android.app.Activity;
 import android.graphics.Rect;
@@ -54,12 +55,12 @@ public class ActivityMain extends Activity implements PreviewCallback, IConnecti
 		
 		if(connection == this.tcp) {
 			this.udp.setListener(this);
-			this.udp.connect(PORT, remoteAddr);
+			this.udp.connect(PORT, new InetSocketAddress(remoteAddr.getAddress(), PORT));
 		}
 	}
 
 	@Override
-	public void onDisconnected() {
+	public void onDisconnected(IConnection connection) {
 		Log.d(this.getClass().getName(), "onDisconnected()");
 		
 		this.tcp.close();
@@ -87,15 +88,27 @@ public class ActivityMain extends Activity implements PreviewCallback, IConnecti
 		}
 	}
 	
+	public void handleMessage(TCPMessage msg) {
+//		Log.d(this.getClass().getName(), "msg.type="+msg.type+" msg.length="+msg.length);
+		
+		if(msg instanceof MsgQuality) {
+			this.streamQuality = (int)((MsgQuality)msg).quality;
+			Log.d(this.getClass().getName(), "streamQuality="+this.streamQuality);
+		} else {
+			Log.w(this.getClass().getName(), "Didn't handle tcp message!");
+		}
+	}
+	
 	public void update(byte[] data, Camera camera) {
 		if(this.udp.open) {
 			try {
 				YuvImage img = new YuvImage(data, this.camera.getParams().getPreviewFormat(), this.camera.getPreviewWidth(), this.camera.getPreviewHeight(), null);
 				ToByteArrayOutputStream bout = new ToByteArrayOutputStream(this.netBuffer);
 				img.compressToJpeg(new Rect(0, 0, this.camera.getPreviewWidth(), this.camera.getPreviewHeight()), this.streamQuality, bout);
-				if(60000 < bout.size())
+				if(60000 < bout.size()) {
 					Log.e(this.getClass().getName(), "Image size is too big! ("+bout.size()+" bytes)");
-				else
+					this.streamQuality--;
+				} else
 					this.udp.send(this.netBuffer, 0, bout.size());
 				bout.close();
 			} catch(Exception e) {
@@ -106,7 +119,7 @@ public class ActivityMain extends Activity implements PreviewCallback, IConnecti
 		while(this.tcp.open && 0 < this.tcp.available()) {
 			TCPMessage msg = this.tcp.readMsg();
 			if(msg != null)
-				Log.d(this.getClass().getName(), "msg.type="+msg.type+" msg.length="+msg.length);
+				this.handleMessage(msg);
 			else
 				Log.w(this.getClass().getName(), "msg=null");
 		}

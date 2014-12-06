@@ -2,6 +2,7 @@ package hu.berzsenyi.mr14.net;
 
 import hu.berzsenyi.mr14.net.msg.MsgConnect;
 import hu.berzsenyi.mr14.net.msg.MsgDisconnect;
+import hu.berzsenyi.mr14.net.msg.MsgQuality;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -44,7 +45,6 @@ public class TCPConnection implements IConnection {
 		public void run() {
 			try {
 				this.connection.socket = new Socket();
-				this.connection.socket.bind(new InetSocketAddress(this.connection.localPort));
 				this.connection.socket.connect(this.connection.remoteAddr);
 				this.connection.onConnection();
 			} catch(Exception e) {
@@ -83,12 +83,11 @@ public class TCPConnection implements IConnection {
 		}
 	}
 	
-	public void connect(int localPort, String host, int port) {
+	public void connect(String host, int port) {
 		if(this.open)
 			this.close();
 		this.connecting = true;
 		try {
-			this.localPort = localPort;
 			this.remoteAddr = new InetSocketAddress(host, port);
 			new TCPConnectThread(this).start();
 		} catch(Exception e) {
@@ -134,6 +133,9 @@ public class TCPConnection implements IConnection {
 				break;
 			case MsgDisconnect.TYPE:
 				msg = new MsgDisconnect(length);
+				break;
+			case MsgQuality.TYPE:
+				msg = new MsgQuality(length);
 				break;
 			}
 			if(msg != null) {
@@ -191,6 +193,6 @@ public class TCPConnection implements IConnection {
 		}
 		
 		if(this.listener != null)
-			this.listener.onDisconnected();
+			this.listener.onDisconnected(this);
 	}
 }

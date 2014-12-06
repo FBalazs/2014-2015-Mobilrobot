@@ -6,10 +6,12 @@ import java.net.DatagramPacket;
 import java.net.InetSocketAddress;
 
 import javax.imageio.ImageIO;
+import javax.swing.JOptionPane;
 
 import hu.berzsenyi.mr14.net.IConnection;
 import hu.berzsenyi.mr14.net.IConnectionListener;
 import hu.berzsenyi.mr14.net.TCPConnection;
+import hu.berzsenyi.mr14.net.TCPMessage;
 import hu.berzsenyi.mr14.net.UDPConnection;
 import hu.berzsenyi.mr14.net.msg.MsgConnect;
 
@@ -24,11 +26,11 @@ public class RobotControl implements Runnable, IConnectionListener {
 	public void create() {
 		System.out.println("create()");
 		
-		this.display = new RobotDisplay();
+		this.display = new RobotDisplay(this);
 		this.display.setTitle("Robot Control");
 		
 		this.tcp.setListener(this);
-		this.tcp.connect(PORT, "192.168.0.13", PORT);
+		this.tcp.connect(JOptionPane.showInputDialog(this.display, "Enter the IP address!", "192.168.0.13"), PORT);
 	}
 	
 	@Override
@@ -47,9 +49,10 @@ public class RobotControl implements Runnable, IConnectionListener {
 	}
 
 	@Override
-	public void onDisconnected() {
+	public void onDisconnected(IConnection connection) {
 		System.out.println("onDisconnected()");
-		
+		if(!this.display.shouldClose && connection == this.tcp)
+			JOptionPane.showMessageDialog(this.display, "Disconnected!");
 	}
 	
 	byte[] netBuffer = new byte[60000];
@@ -57,11 +60,19 @@ public class RobotControl implements Runnable, IConnectionListener {
 	long lastPPS = 0;
 	BufferedImage imgCamera;
 	
+	public void handleMessage(TCPMessage msg) {
+		System.out.println("msg.type="+msg.type+" msg.length="+msg.length);
+		
+	}
+	
 	public void update() {
 //		System.out.println("update()");
 		
 		if(1000 <= System.currentTimeMillis()-this.lastPPS) {
-			System.out.println("pps="+this.pps+" time="+(System.currentTimeMillis()-this.lastPPS));
+			if(this.pps == 0 && System.currentTimeMillis()-this.lastPPS < 1500)
+				this.isRunning = false;
+			this.display.setTitle("Robot Control pps="+this.pps);
+//			System.out.println("pps="+this.pps+" time="+(System.currentTimeMillis()-this.lastPPS));
 			this.pps = 0;
 			this.lastPPS = System.currentTimeMillis();
 		}
@@ -78,6 +89,14 @@ public class RobotControl implements Runnable, IConnectionListener {
 					e.printStackTrace();
 				}
 			}
+		}
+		
+		while(this.tcp.open && 0 < this.tcp.available()) {
+			TCPMessage msg = this.tcp.readMsg();
+			if(msg != null)
+				this.handleMessage(msg);
+			else
+				System.err.println("msg=null");
 		}
 	}
 	

@@ -87,6 +87,6 @@ public class UDPConnection implements IConnection {
 		}
 		
 		if(this.listener != null)
-			this.listener.onDisconnected();
+			this.listener.onDisconnected(this);
 	}
 }
