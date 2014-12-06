@@ -4,40 +4,28 @@ import hu.berzsenyi.mr14.net.msg.MsgQuality;
 
 import java.awt.Canvas;
 import java.awt.Color;
-import java.awt.Frame;
-import java.awt.Label;
-import java.awt.TextField;
-import java.awt.event.TextEvent;
-import java.awt.event.TextListener;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.awt.image.BufferedImage;
 
-public class RobotDisplay extends Frame implements WindowListener {
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JSlider;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+
+public class RobotDisplay extends JFrame implements WindowListener {
 	private static final long serialVersionUID = -3451693389015184734L;
 	
 	public RobotControl control;
 	public boolean shouldClose = false;
 	
 	public Canvas cameraCanvas;
-	public Label labelQuality;
-	public TextField textFieldQuality;
+	public JLabel labelQuality;
+	public JSlider sliderQuality;
 	
-	public void onQualityChange(String text) {
-		try {
-			int q = Integer.parseInt(text);
-			if(q < 0) {
-				q = 0;
-				this.textFieldQuality.setText("0");
-			}
-			if(100 < q) {
-				q = 100;
-				this.textFieldQuality.setText("100");
-			}
-			this.control.tcp.sendMsg(new MsgQuality((byte)q));
-		} catch(Exception e) {
-			this.textFieldQuality.setText("50");
-		}
+	public void onQualityChange(int q) {
+		this.control.tcp.sendMsg(new MsgQuality((byte)q));
 	}
 	
 	public RobotDisplay(RobotControl control) {
@@ -52,18 +40,19 @@ public class RobotDisplay extends Frame implements WindowListener {
 		this.cameraCanvas = new Canvas();
 		this.add(this.cameraCanvas);
 		
-		this.labelQuality = new Label("Quality: ");
+		this.labelQuality = new JLabel("Quality:");
 		this.add(this.labelQuality);
 		
-		this.textFieldQuality = new TextField("50");
-		this.textFieldQuality.addTextListener(new TextListener() {
+		this.sliderQuality = new JSlider();
+		this.sliderQuality.addChangeListener(new ChangeListener() {
 			@Override
-			public void textValueChanged(TextEvent event) {
-				onQualityChange(textFieldQuality.getText());
+			public void stateChanged(ChangeEvent e) {
+				onQualityChange(sliderQuality.getValue());
 			}
 		});
-		this.add(this.textFieldQuality);
+		this.add(this.sliderQuality);
 		
+		this.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		this.addWindowListener(this);
 		this.resizeObjects(640, 480);
 		this.setVisible(true);
@@ -71,8 +60,9 @@ public class RobotDisplay extends Frame implements WindowListener {
 	
 	public void resizeObjects(int imgWidth, int imgHeight) {
 		this.cameraCanvas.setBounds((this.getWidth()-imgWidth)/2, (this.getHeight()-imgHeight)/2, imgWidth, imgHeight);
+		this.cameraCanvas.setLocation(0, 0);
 		this.labelQuality.setBounds(this.cameraCanvas.getX(), this.cameraCanvas.getY()+this.cameraCanvas.getHeight()+5, 45, 20);
-		this.textFieldQuality.setBounds(this.labelQuality.getX()+this.labelQuality.getWidth(), this.labelQuality.getY(), 30, 20);
+		this.sliderQuality.setBounds(this.labelQuality.getX()+this.labelQuality.getWidth(), this.labelQuality.getY(), 100, this.labelQuality.getHeight());
 	}
 	
 	public void update(BufferedImage cameraImage) {

@@ -14,6 +14,8 @@ import hu.berzsenyi.mr14.net.TCPConnection;
 import hu.berzsenyi.mr14.net.TCPMessage;
 import hu.berzsenyi.mr14.net.UDPConnection;
 import hu.berzsenyi.mr14.net.msg.MsgConnect;
+import hu.berzsenyi.mr14.net.msg.MsgDisconnect;
+import hu.berzsenyi.mr14.net.msg.MsgStatus;
 
 public class RobotControl implements Runnable, IConnectionListener {
 	public static final int PORT = 8080;
@@ -25,7 +27,6 @@ public class RobotControl implements Runnable, IConnectionListener {
 	
 	public void create() {
 		System.out.println("create()");
-		
 		this.display = new RobotDisplay(this);
 		this.display.setTitle("Robot Control");
 		
@@ -59,6 +60,7 @@ public class RobotControl implements Runnable, IConnectionListener {
 	int pps = 0;
 	long lastPPS = 0;
 	BufferedImage imgCamera;
+	long lastStatus = 0;
 	
 	public void handleMessage(TCPMessage msg) {
 		System.out.println("msg.type="+msg.type+" msg.length="+msg.length);
@@ -77,6 +79,19 @@ public class RobotControl implements Runnable, IConnectionListener {
 			this.lastPPS = System.currentTimeMillis();
 		}
 		
+		if(this.tcp.open && 500 <= System.currentTimeMillis()-this.lastStatus) {
+			this.lastStatus = System.currentTimeMillis();
+			this.tcp.sendMsg(new MsgStatus());
+		}
+		
+		while(this.tcp.open && 8 <= this.tcp.available()) {
+			TCPMessage msg = this.tcp.readMsg();
+			if(msg != null)
+				this.handleMessage(msg);
+			else
+				System.err.println("msg=null");
+		}
+		
 		if(this.udp.open) {
 			DatagramPacket pkt = this.udp.receive(this.netBuffer, 100);
 			if(pkt != null) {
@@ -90,14 +105,6 @@ public class RobotControl implements Runnable, IConnectionListener {
 				}
 			}
 		}
-		
-		while(this.tcp.open && 0 < this.tcp.available()) {
-			TCPMessage msg = this.tcp.readMsg();
-			if(msg != null)
-				this.handleMessage(msg);
-			else
-				System.err.println("msg=null");
-		}
 	}
 	
 	public void render() {
@@ -110,6 +117,7 @@ public class RobotControl implements Runnable, IConnectionListener {
 	public void destroy() {
 		System.out.println("destroy()");
 		
+		this.tcp.sendMsg(new MsgDisconnect());
 		this.tcp.close();
 		this.udp.close();
 	}

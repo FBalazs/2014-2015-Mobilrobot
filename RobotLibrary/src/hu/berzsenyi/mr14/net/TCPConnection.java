@@ -1,8 +1,6 @@
 package hu.berzsenyi.mr14.net;
 
-import hu.berzsenyi.mr14.net.msg.MsgConnect;
-import hu.berzsenyi.mr14.net.msg.MsgDisconnect;
-import hu.berzsenyi.mr14.net.msg.MsgQuality;
+import hu.berzsenyi.mr14.net.msg.*;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -136,6 +134,9 @@ public class TCPConnection implements IConnection {
 				break;
 			case MsgQuality.TYPE:
 				msg = new MsgQuality(length);
+				break;
+			case MsgStatus.TYPE:
+				msg = new MsgStatus(length);
 				break;
 			}
 			if(msg != null) {

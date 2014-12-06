@@ -8,6 +8,7 @@ import hu.berzsenyi.mr14.net.IConnectionListener;
 import hu.berzsenyi.mr14.net.TCPConnection;
 import hu.berzsenyi.mr14.net.TCPMessage;
 import hu.berzsenyi.mr14.net.UDPConnection;
+import hu.berzsenyi.mr14.net.msg.MsgDisconnect;
 import hu.berzsenyi.mr14.net.msg.MsgQuality;
 import hu.berzsenyi.robotcamera.R;
 import android.app.Activity;
@@ -25,6 +26,7 @@ public class ActivityMain extends Activity implements PreviewCallback, IConnecti
 	public CameraHandler camera = new CameraHandler();
 	public TCPConnection tcp = new TCPConnection();
 	public UDPConnection udp = new UDPConnection();
+	public long lastReceiveTime;
 	
 	public int streamQuality = 50;
 	
@@ -54,6 +56,7 @@ public class ActivityMain extends Activity implements PreviewCallback, IConnecti
 		Log.d(this.getClass().getName(), "onConnected()");
 		
 		if(connection == this.tcp) {
+			this.lastReceiveTime = System.currentTimeMillis();
 			this.udp.setListener(this);
 			this.udp.connect(PORT, new InetSocketAddress(remoteAddr.getAddress(), PORT));
 		}
@@ -90,10 +93,13 @@ public class ActivityMain extends Activity implements PreviewCallback, IConnecti
 	
 	public void handleMessage(TCPMessage msg) {
 //		Log.d(this.getClass().getName(), "msg.type="+msg.type+" msg.length="+msg.length);
+		this.lastReceiveTime = System.currentTimeMillis();
 		
 		if(msg instanceof MsgQuality) {
 			this.streamQuality = (int)((MsgQuality)msg).quality;
 			Log.d(this.getClass().getName(), "streamQuality="+this.streamQuality);
+		} else if(msg instanceof MsgDisconnect) {
+			this.tcp.close();
 		} else {
 			Log.w(this.getClass().getName(), "Didn't handle tcp message!");
 		}
@@ -116,12 +122,17 @@ public class ActivityMain extends Activity implements PreviewCallback, IConnecti
 			}
 		}
 		
-		while(this.tcp.open && 0 < this.tcp.available()) {
+		while(this.tcp.open && 8 <= this.tcp.available()) {
 			TCPMessage msg = this.tcp.readMsg();
 			if(msg != null)
 				this.handleMessage(msg);
 			else
 				Log.w(this.getClass().getName(), "msg=null");
+		}
+		
+		if(this.tcp.open && 1000 < System.currentTimeMillis()-this.lastReceiveTime) {
+			Log.w(this.getClass().getName(), "Client timed out!");
+			this.tcp.close();
 		}
 		
 		camera.addCallbackBuffer(data);
