@@ -16,6 +16,7 @@ import hu.berzsenyi.mr14.net.UDPConnection;
 import hu.berzsenyi.mr14.net.msg.MsgConnect;
 import hu.berzsenyi.mr14.net.msg.MsgDisconnect;
 import hu.berzsenyi.mr14.net.msg.MsgStatus;
+import hu.berzsenyi.mr14.net.msg.MsgSwitchPos;
 
 public class RobotControl implements Runnable, IConnectionListener {
 	public static final int PORT = 8080;
@@ -59,12 +60,21 @@ public class RobotControl implements Runnable, IConnectionListener {
 	byte[] netBuffer = new byte[60000];
 	int pps = 0;
 	long lastPPS = 0;
-	BufferedImage imgCamera;
+	BufferedImage imgCamera = new BufferedImage(1, 1, BufferedImage.TYPE_INT_RGB), img1, img2;
 	long lastStatus = 0;
 	
 	public void handleMessage(TCPMessage msg) {
 		System.out.println("msg.type="+msg.type+" msg.length="+msg.length);
 		
+		if(msg instanceof MsgSwitchPos) {
+			synchronized (this.imgCamera) {
+				this.img2 = this.imgCamera;
+				// TODO process img2
+				// TODO send information to pick up the target
+			}
+		} else {
+			System.err.println("Didn't handle tcp message!");
+		}
 	}
 	
 	public void update() {
@@ -98,7 +108,9 @@ public class RobotControl implements Runnable, IConnectionListener {
 				this.pps++;
 				try {
 					ByteArrayInputStream bin = new ByteArrayInputStream(pkt.getData());
-					this.imgCamera = ImageIO.read(bin);
+					synchronized (this.imgCamera) {
+						this.imgCamera = ImageIO.read(bin);
+					}
 					bin.close();
 				} catch(Exception e) {
 					e.printStackTrace();

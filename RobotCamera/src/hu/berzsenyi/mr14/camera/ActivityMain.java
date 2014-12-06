@@ -10,6 +10,7 @@ import hu.berzsenyi.mr14.net.TCPMessage;
 import hu.berzsenyi.mr14.net.UDPConnection;
 import hu.berzsenyi.mr14.net.msg.MsgDisconnect;
 import hu.berzsenyi.mr14.net.msg.MsgQuality;
+import hu.berzsenyi.mr14.net.msg.MsgSwitchPos;
 import hu.berzsenyi.robotcamera.R;
 import android.app.Activity;
 import android.graphics.Rect;
@@ -100,6 +101,8 @@ public class ActivityMain extends Activity implements PreviewCallback, IConnecti
 			Log.d(this.getClass().getName(), "streamQuality="+this.streamQuality);
 		} else if(msg instanceof MsgDisconnect) {
 			this.tcp.close();
+		} else if(msg instanceof MsgSwitchPos) {
+			// TODO start to switch position
 		} else {
 			Log.w(this.getClass().getName(), "Didn't handle tcp message!");
 		}

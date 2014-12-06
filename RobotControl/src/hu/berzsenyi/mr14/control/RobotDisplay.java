@@ -1,9 +1,12 @@
 package hu.berzsenyi.mr14.control;
 
 import hu.berzsenyi.mr14.net.msg.MsgQuality;
+import hu.berzsenyi.mr14.net.msg.MsgSwitchPos;
 
 import java.awt.Canvas;
 import java.awt.Color;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.awt.image.BufferedImage;
@@ -28,6 +31,14 @@ public class RobotDisplay extends JFrame implements WindowListener {
 		this.control.tcp.sendMsg(new MsgQuality((byte)q));
 	}
 	
+	public void onVideoClick(int x, int y) {
+		synchronized (this.control.imgCamera) {
+			this.control.img1 = this.control.imgCamera;
+			this.control.tcp.sendMsg(new MsgSwitchPos());
+			// TODO process img1 at (x, y)
+		}
+	}
+	
 	public RobotDisplay(RobotControl control) {
 		this.control = control;
 		this.shouldClose = false;
@@ -38,6 +49,12 @@ public class RobotDisplay extends JFrame implements WindowListener {
 		this.setBackground(Color.lightGray);
 		
 		this.cameraCanvas = new Canvas();
+		this.cameraCanvas.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				onVideoClick(e.getX(), e.getY());
+			}
+		});
 		this.add(this.cameraCanvas);
 		
 		this.labelQuality = new JLabel("Quality:");

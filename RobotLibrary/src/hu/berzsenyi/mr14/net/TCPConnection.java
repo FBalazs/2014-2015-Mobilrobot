@@ -138,6 +138,9 @@ public class TCPConnection implements IConnection {
 			case MsgStatus.TYPE:
 				msg = new MsgStatus(length);
 				break;
+			case MsgSwitchPos.TYPE:
+				msg = new MsgSwitchPos(length);
+				break;
 			}
 			if(msg != null) {
 				while(this.din.available() < length)
