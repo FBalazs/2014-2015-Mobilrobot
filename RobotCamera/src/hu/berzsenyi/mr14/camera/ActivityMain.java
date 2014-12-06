@@ -3,6 +3,7 @@ package hu.berzsenyi.mr14.camera;
 import java.net.InetSocketAddress;
 
 import hu.berzsenyi.mr14.ToByteArrayOutputStream;
+import hu.berzsenyi.mr14.net.IConnection;
 import hu.berzsenyi.mr14.net.IConnectionListener;
 import hu.berzsenyi.mr14.net.TCPConnection;
 import hu.berzsenyi.mr14.net.TCPMessage;
@@ -18,9 +19,13 @@ import android.util.Log;
 import android.widget.Toast;
 
 public class ActivityMain extends Activity implements PreviewCallback, IConnectionListener {
+	public static final int PORT = 8080;
+	
 	public CameraHandler camera = new CameraHandler();
 	public TCPConnection tcp = new TCPConnection();
 	public UDPConnection udp = new UDPConnection();
+	
+	public int streamQuality = 50;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -40,14 +45,17 @@ public class ActivityMain extends Activity implements PreviewCallback, IConnecti
 		}
 		
 		this.tcp.setListener(this);
-		this.tcp.listen(8080);
+		this.tcp.listen(PORT);
 	}
 	
 	@Override
-	public void onConnected(InetSocketAddress remoteAddr) {
+	public void onConnected(IConnection connection, InetSocketAddress remoteAddr) {
 		Log.d(this.getClass().getName(), "onConnected()");
 		
-		this.udp.connect(8080, remoteAddr);
+		if(connection == this.tcp) {
+			this.udp.setListener(this);
+			this.udp.connect(PORT, remoteAddr);
+		}
 	}
 
 	@Override
@@ -56,53 +64,35 @@ public class ActivityMain extends Activity implements PreviewCallback, IConnecti
 		
 		this.tcp.close();
 		this.udp.close();
-		this.tcp.listen(8080);
+		this.tcp.listen(PORT);
 	}
 	
 	public byte[] netBuffer = new byte[60000];
 	
-//	public static class UpdateThread extends Thread {
-//		public ActivityMain activity;
-//		public byte[] data;
-//		public Camera camera;
-//		
-//		public UpdateThread(ActivityMain activity, byte[] data, Camera camera) {
-//			super("Thread-Update");
-//			this.activity = activity;
-//			this.data = data;
-//			this.camera = camera;
-//		}
-//		
-//		@Override
-//		public void run() {
-////			if(!this.activity.tcp.open && !this.activity.tcp.connecting)
-////				this.activity.tcp.listen(8080);
-//			
-//			if(this.activity.udp.open) {
-//				this.activity.udp.send(this.activity.netBuffer, 0, 1024);
-//			}
-//			
-//			while(this.activity.tcp.open && 0 < this.activity.tcp.available()) {
-//				TCPMessage msg = this.activity.tcp.readMsg();
-//				if(msg != null)
-//					Log.d(this.activity.getClass().getName(), "msg.type="+msg.type+" msg.length="+msg.length);
-//				else
-//					Log.w(this.activity.getClass().getName(), "msg=null");
-//			}
-//			
-//			this.camera.addCallbackBuffer(this.data);
-//		}
-//	}
-	
-	@Override
-	public void onPreviewFrame(byte[] data, Camera camera) {
-//		Log.d(this.getClass().getName(), "onPreviewFrame()");
+	public static class UpdateThread extends Thread {
+		public ActivityMain activity;
+		public byte[] data;
+		public Camera camera;
 		
+		public UpdateThread(ActivityMain activity, byte[] data, Camera camera) {
+			super("Thread-Update");
+			this.activity = activity;
+			this.data = data;
+			this.camera = camera;
+		}
+		
+		@Override
+		public void run() {
+			this.activity.update(this.data, this.camera);
+		}
+	}
+	
+	public void update(byte[] data, Camera camera) {
 		if(this.udp.open) {
 			try {
 				YuvImage img = new YuvImage(data, this.camera.getParams().getPreviewFormat(), this.camera.getPreviewWidth(), this.camera.getPreviewHeight(), null);
 				ToByteArrayOutputStream bout = new ToByteArrayOutputStream(this.netBuffer);
-				img.compressToJpeg(new Rect(0, 0, this.camera.getPreviewWidth(), this.camera.getPreviewHeight()), 75, bout);
+				img.compressToJpeg(new Rect(0, 0, this.camera.getPreviewWidth(), this.camera.getPreviewHeight()), this.streamQuality, bout);
 				if(60000 < bout.size())
 					Log.e(this.getClass().getName(), "Image size is too big! ("+bout.size()+" bytes)");
 				else
@@ -113,17 +103,21 @@ public class ActivityMain extends Activity implements PreviewCallback, IConnecti
 			}
 		}
 		
-//		while(this.tcp.open && 0 < this.tcp.available()) {
-//			TCPMessage msg = this.tcp.readMsg();
-//			if(msg != null)
-//				Log.d(this.getClass().getName(), "msg.type="+msg.type+" msg.length="+msg.length);
-//			else
-//				Log.w(this.getClass().getName(), "msg=null");
-//		}
+		while(this.tcp.open && 0 < this.tcp.available()) {
+			TCPMessage msg = this.tcp.readMsg();
+			if(msg != null)
+				Log.d(this.getClass().getName(), "msg.type="+msg.type+" msg.length="+msg.length);
+			else
+				Log.w(this.getClass().getName(), "msg=null");
+		}
 		
 		camera.addCallbackBuffer(data);
-		
-//		new UpdateThread(this, data, camera).start();
+	}
+	
+	@Override
+	public void onPreviewFrame(byte[] data, Camera camera) {
+//		Log.d(this.getClass().getName(), "onPreviewFrame()");
+		new UpdateThread(this, data, camera).start();
 	}
 	
 	@Override

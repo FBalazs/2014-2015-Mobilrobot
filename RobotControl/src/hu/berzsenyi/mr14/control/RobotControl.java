@@ -7,12 +7,15 @@ import java.net.InetSocketAddress;
 
 import javax.imageio.ImageIO;
 
+import hu.berzsenyi.mr14.net.IConnection;
 import hu.berzsenyi.mr14.net.IConnectionListener;
 import hu.berzsenyi.mr14.net.TCPConnection;
 import hu.berzsenyi.mr14.net.UDPConnection;
 import hu.berzsenyi.mr14.net.msg.MsgConnect;
 
 public class RobotControl implements Runnable, IConnectionListener {
+	public static final int PORT = 8080;
+	
 	public boolean isRunning;
 	public RobotDisplay display;
 	public TCPConnection tcp = new TCPConnection();
@@ -22,25 +25,31 @@ public class RobotControl implements Runnable, IConnectionListener {
 		System.out.println("create()");
 		
 		this.display = new RobotDisplay();
+		this.display.setTitle("Robot Control");
 		
 		this.tcp.setListener(this);
-		this.tcp.connect(8080, "192.168.0.13", 8080);
+		this.tcp.connect(PORT, "192.168.0.13", PORT);
 	}
 	
 	@Override
-	public void onConnected(InetSocketAddress remoteAddr) {
+	public void onConnected(IConnection connection, InetSocketAddress remoteAddr) {
 		System.out.println("onConnected()");
 		
-		this.udp.connect(8080, remoteAddr);
-		this.tcp.sendMsg(new MsgConnect());
+		if(connection == this.tcp) {
+			System.out.println("tcp");
+			this.udp.setListener(this);
+			this.udp.connect(PORT, remoteAddr);
+			this.tcp.sendMsg(new MsgConnect());
+		} else {
+			System.out.println("udp");
+//			this.udp.receive(this.netBuffer);
+		}
 	}
 
 	@Override
 	public void onDisconnected() {
 		System.out.println("onDisconnected()");
 		
-		this.tcp.close();
-		this.udp.close();
 	}
 	
 	byte[] netBuffer = new byte[60000];
@@ -58,17 +67,34 @@ public class RobotControl implements Runnable, IConnectionListener {
 		}
 		
 		if(this.udp.open) {
-			DatagramPacket pkt = this.udp.receive(this.netBuffer);
-			this.pps++;
-			try {
-				ByteArrayInputStream bin = new ByteArrayInputStream(pkt.getData());
-				this.imgCamera = ImageIO.read(bin);
-				bin.close();
-			} catch(Exception e) {
-				e.printStackTrace();
+			DatagramPacket pkt = this.udp.receive(this.netBuffer, 100);
+			if(pkt != null) {
+				this.pps++;
+				try {
+					ByteArrayInputStream bin = new ByteArrayInputStream(pkt.getData());
+					this.imgCamera = ImageIO.read(bin);
+					bin.close();
+				} catch(Exception e) {
+					e.printStackTrace();
+				}
 			}
-//			System.out.println(pkt.getLength()+" "+pkt.getData().length);
 		}
+		
+//		if(this.udp.open && !this.udp.receiving) {
+//			if(this.udp.pkt != null) {
+//				this.pps++;
+//				try {
+//					ByteArrayInputStream bin = new ByteArrayInputStream(this.udp.pkt.getData());
+//					this.imgCamera = ImageIO.read(bin);
+//					bin.close();
+//				} catch(Exception e) {
+//					e.printStackTrace();
+//				}
+//			}
+//			this.udp.receive(this.netBuffer);
+//			
+////			System.out.println(pkt.getLength()+" "+pkt.getData().length);
+//		}
 	}
 	
 	public void render() {
@@ -83,8 +109,6 @@ public class RobotControl implements Runnable, IConnectionListener {
 		
 		this.tcp.close();
 		this.udp.close();
-		
-		System.exit(0);
 	}
 	
 	@Override
@@ -111,6 +135,7 @@ public class RobotControl implements Runnable, IConnectionListener {
 				}
 		}
 		this.destroy();
+		System.exit(0);
 	}
 	
 	public static void main(String[] args) {

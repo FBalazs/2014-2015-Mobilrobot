@@ -3,8 +3,9 @@ package hu.berzsenyi.mr14.net;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
+import java.net.SocketTimeoutException;
 
-public class UDPConnection {
+public class UDPConnection implements IConnection {
 	public static class UDPSendThread extends Thread {
 		public UDPConnection connection;
 		public byte[] buffer;
@@ -29,35 +30,41 @@ public class UDPConnection {
 		}
 	}
 	
-	public DatagramSocket socket;
+	public DatagramSocket socket = null;
 	
-	public boolean open;
+	public boolean connecting = false, open = false;
 	
-	public IConnectionListener listener;
+	public IConnectionListener listener = null;
 	
+	@Override
 	public void setListener(IConnectionListener listener) {
 		this.listener = listener;
 	}
 	
 	public void connect(int localPort, InetSocketAddress remoteAddr) {
+		this.connecting = true;
 		try {
 			this.socket = new DatagramSocket(localPort);
 			this.socket.connect(remoteAddr);
+			if(this.listener != null)
+				this.listener.onConnected(this, remoteAddr);
 		} catch(Exception e) {
 			e.printStackTrace();
 			this.close();
 		}
 		this.open = true;
+		this.connecting = false;
 	}
 	
-	public DatagramPacket receive(byte[] buffer) {
+	public DatagramPacket receive(byte[] buffer, int timeout) {
 		try {
 			DatagramPacket pkt = new DatagramPacket(buffer, buffer.length);
+			this.socket.setSoTimeout(timeout);
 			this.socket.receive(pkt);
 			return pkt;
 		} catch(Exception e) {
-			e.printStackTrace();
-			this.close();
+			if(!(e instanceof SocketTimeoutException))
+				e.printStackTrace();
 			return null;
 		}
 	}
@@ -66,16 +73,19 @@ public class UDPConnection {
 		new UDPSendThread(this, buffer, offset, length).start();
 	}
 	
+	@Override
 	public void close() {
-		if(!this.open)
+		if(!this.open && !this.connecting)
 			return;
+		this.open = false;
+		this.connecting = false;
+		
 		try {
 			this.socket.close();
 		} catch(Exception e) {
 			e.printStackTrace();
 		}
 		
-		this.open = false;
 		if(this.listener != null)
 			this.listener.onDisconnected();
 	}

@@ -9,7 +9,7 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-public class TCPConnection {
+public class TCPConnection implements IConnection {
 	public static class TCPListenThread extends Thread {
 		public TCPConnection connection;
 		
@@ -65,6 +65,7 @@ public class TCPConnection {
 	
 	public IConnectionListener listener;
 	
+	@Override
 	public void setListener(IConnectionListener listener) {
 		this.listener = listener;
 	}
@@ -73,7 +74,6 @@ public class TCPConnection {
 		if(this.open)
 			this.close();
 		this.connecting = true;
-		this.open = false;
 		try {
 			this.localPort = port;
 			new TCPListenThread(this).start();
@@ -87,7 +87,6 @@ public class TCPConnection {
 		if(this.open)
 			this.close();
 		this.connecting = true;
-		this.open = false;
 		try {
 			this.localPort = localPort;
 			this.remoteAddr = new InetSocketAddress(host, port);
@@ -105,7 +104,7 @@ public class TCPConnection {
 			this.din = new DataInputStream(this.socket.getInputStream());
 			this.dout = new DataOutputStream(this.socket.getOutputStream());
 			if(this.listener != null)
-				this.listener.onConnected(this.remoteAddr);
+				this.listener.onConnected(this, this.remoteAddr);
 		} catch(Exception e) {
 			e.printStackTrace();
 			this.close();
@@ -124,7 +123,7 @@ public class TCPConnection {
 	
 	public TCPMessage readMsg() {
 		try {
-			if(this.available() < 8)
+			if(this.din.available() < 8)
 				return null;
 			int type = this.din.readInt();
 			int length = this.din.readInt();
@@ -137,8 +136,11 @@ public class TCPConnection {
 				msg = new MsgDisconnect(length);
 				break;
 			}
-			if(msg != null)
+			if(msg != null) {
+				while(this.din.available() < length)
+					Thread.sleep(10);
 				msg.read(this.din);
+			}
 			return msg;
 		} catch(Exception e) {
 			e.printStackTrace();
@@ -159,10 +161,12 @@ public class TCPConnection {
 		}
 	}
 	
+	@Override
 	public void close() {
-		if(!this.open)
+		if(!this.open && !this.connecting)
 			return;
 		this.open = false;
+		this.connecting = false;
 		
 		try {
 			this.din.close();
