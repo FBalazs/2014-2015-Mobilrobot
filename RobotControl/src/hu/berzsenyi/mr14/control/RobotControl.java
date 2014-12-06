@@ -42,7 +42,7 @@ public class RobotControl implements Runnable, IConnectionListener {
 			this.tcp.sendMsg(new MsgConnect());
 		} else {
 			System.out.println("udp");
-//			this.udp.receive(this.netBuffer);
+			
 		}
 	}
 
@@ -79,22 +79,6 @@ public class RobotControl implements Runnable, IConnectionListener {
 				}
 			}
 		}
-		
-//		if(this.udp.open && !this.udp.receiving) {
-//			if(this.udp.pkt != null) {
-//				this.pps++;
-//				try {
-//					ByteArrayInputStream bin = new ByteArrayInputStream(this.udp.pkt.getData());
-//					this.imgCamera = ImageIO.read(bin);
-//					bin.close();
-//				} catch(Exception e) {
-//					e.printStackTrace();
-//				}
-//			}
-//			this.udp.receive(this.netBuffer);
-//			
-////			System.out.println(pkt.getLength()+" "+pkt.getData().length);
-//		}
 	}
 	
 	public void render() {
