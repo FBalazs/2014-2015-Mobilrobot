@@ -31,11 +31,10 @@ public class RobotDisplay extends JFrame implements WindowListener {
 		this.control.tcp.sendMsg(new MsgQuality((byte)q));
 	}
 	
-	public void onVideoClick(int x, int y) {
+	public void onVideoClick(final int x, final int y) {
 		synchronized (this.control.imgCamera) {
-			this.control.img1 = this.control.imgCamera;
 			this.control.tcp.sendMsg(new MsgSwitchPos());
-			// TODO process img1 at (x, y)
+			this.control.vision.process1(this.control.imgCamera, x, y);
 		}
 	}
 	

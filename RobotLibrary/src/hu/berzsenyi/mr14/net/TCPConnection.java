@@ -43,7 +43,9 @@ public class TCPConnection implements IConnection {
 		public void run() {
 			try {
 				this.connection.socket = new Socket();
+				this.connection.socket.setSoTimeout(0);
 				this.connection.socket.connect(this.connection.remoteAddr);
+				this.connection.localPort = this.connection.socket.getLocalPort();
 				this.connection.onConnection();
 			} catch(Exception e) {
 				e.printStackTrace();
@@ -95,13 +97,14 @@ public class TCPConnection implements IConnection {
 	}
 	
 	public void onConnection() {
-		this.open = true;
-		this.connecting = false;
+		System.err.println("onConnection()");
 		try {
 			this.din = new DataInputStream(this.socket.getInputStream());
 			this.dout = new DataOutputStream(this.socket.getOutputStream());
 			if(this.listener != null)
 				this.listener.onConnected(this, this.remoteAddr);
+			this.open = true;
+			this.connecting = false;
 		} catch(Exception e) {
 			e.printStackTrace();
 			this.close();
@@ -177,23 +180,23 @@ public class TCPConnection implements IConnection {
 		try {
 			this.din.close();
 		} catch(Exception e) {
-			e.printStackTrace();
+//			e.printStackTrace();
 		}
 		try {
 			this.dout.close();
 		} catch(Exception e) {
-			e.printStackTrace();
+//			e.printStackTrace();
 		}
 		try {
 			this.socket.close();
 		} catch(Exception e) {
-			e.printStackTrace();
+//			e.printStackTrace();
 		}
 		try {
 			if(this.serverSocket != null)
 				this.serverSocket.close();
 		} catch(Exception e) {
-			e.printStackTrace();
+//			e.printStackTrace();
 		}
 		
 		if(this.listener != null)

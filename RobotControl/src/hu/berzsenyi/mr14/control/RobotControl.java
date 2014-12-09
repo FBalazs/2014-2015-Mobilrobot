@@ -8,6 +8,7 @@ import java.net.InetSocketAddress;
 import javax.imageio.ImageIO;
 import javax.swing.JOptionPane;
 
+import hu.berzsenyi.mr14.control.vision.RobotVision;
 import hu.berzsenyi.mr14.net.IConnection;
 import hu.berzsenyi.mr14.net.IConnectionListener;
 import hu.berzsenyi.mr14.net.TCPConnection;
@@ -19,12 +20,19 @@ import hu.berzsenyi.mr14.net.msg.MsgStatus;
 import hu.berzsenyi.mr14.net.msg.MsgSwitchPos;
 
 public class RobotControl implements Runnable, IConnectionListener {
-	public static final int PORT = 8080;
+	public static final int PORT = 8080, TIMEOUT = 3000;
 	
 	public boolean isRunning;
 	public RobotDisplay display;
 	public TCPConnection tcp = new TCPConnection();
 	public UDPConnection udp = new UDPConnection();
+	public RobotVision vision;
+	
+	public byte[] netBuffer = new byte[60000];
+	public int pps = 0;
+	public long lastPPS = 0;
+	public BufferedImage imgCamera = new BufferedImage(1, 1, BufferedImage.TYPE_INT_RGB);
+	public long lastStatus = 0, lastVideo = 0;
 	
 	public void create() {
 		System.out.println("create()");
@@ -32,7 +40,9 @@ public class RobotControl implements Runnable, IConnectionListener {
 		this.display.setTitle("Robot Control");
 		
 		this.tcp.setListener(this);
-		this.tcp.connect(JOptionPane.showInputDialog(this.display, "Enter the IP address!", "192.168.0.13"), PORT);
+		this.tcp.connect(JOptionPane.showInputDialog(this.display, "Enter the IP address!", "192.168.43.2"), PORT);
+		
+		this.vision = new RobotVision();
 	}
 	
 	@Override
@@ -42,11 +52,11 @@ public class RobotControl implements Runnable, IConnectionListener {
 		if(connection == this.tcp) {
 			System.out.println("tcp");
 			this.udp.setListener(this);
-			this.udp.connect(PORT, remoteAddr);
+			this.udp.connect(this.tcp.localPort, remoteAddr);
 			this.tcp.sendMsg(new MsgConnect());
 		} else {
 			System.out.println("udp");
-			
+			this.lastVideo = System.currentTimeMillis();
 		}
 	}
 
@@ -57,19 +67,12 @@ public class RobotControl implements Runnable, IConnectionListener {
 			JOptionPane.showMessageDialog(this.display, "Disconnected!");
 	}
 	
-	byte[] netBuffer = new byte[60000];
-	int pps = 0;
-	long lastPPS = 0;
-	BufferedImage imgCamera = new BufferedImage(1, 1, BufferedImage.TYPE_INT_RGB), img1, img2;
-	long lastStatus = 0;
-	
 	public void handleMessage(TCPMessage msg) {
 		System.out.println("msg.type="+msg.type+" msg.length="+msg.length);
 		
 		if(msg instanceof MsgSwitchPos) {
 			synchronized (this.imgCamera) {
-				this.img2 = this.imgCamera;
-				// TODO process img2
+				this.vision.process2(this.imgCamera);
 				// TODO send information to pick up the target
 			}
 		} else {
@@ -81,15 +84,12 @@ public class RobotControl implements Runnable, IConnectionListener {
 //		System.out.println("update()");
 		
 		if(1000 <= System.currentTimeMillis()-this.lastPPS) {
-			if(this.pps == 0 && System.currentTimeMillis()-this.lastPPS < 1500)
-				this.isRunning = false;
 			this.display.setTitle("Robot Control pps="+this.pps);
-//			System.out.println("pps="+this.pps+" time="+(System.currentTimeMillis()-this.lastPPS));
 			this.pps = 0;
 			this.lastPPS = System.currentTimeMillis();
 		}
 		
-		if(this.tcp.open && 500 <= System.currentTimeMillis()-this.lastStatus) {
+		if(this.tcp.open && TIMEOUT/10 <= System.currentTimeMillis()-this.lastStatus) {
 			this.lastStatus = System.currentTimeMillis();
 			this.tcp.sendMsg(new MsgStatus());
 		}
@@ -105,6 +105,7 @@ public class RobotControl implements Runnable, IConnectionListener {
 		if(this.udp.open) {
 			DatagramPacket pkt = this.udp.receive(this.netBuffer, 100);
 			if(pkt != null) {
+				this.lastVideo = System.currentTimeMillis();
 				this.pps++;
 				try {
 					ByteArrayInputStream bin = new ByteArrayInputStream(pkt.getData());
@@ -115,6 +116,9 @@ public class RobotControl implements Runnable, IConnectionListener {
 				} catch(Exception e) {
 					e.printStackTrace();
 				}
+			} else if(TIMEOUT < System.currentTimeMillis()-this.lastVideo) {
+				System.err.println("Timed out!");
+				this.isRunning = false;
 			}
 		}
 	}
@@ -129,7 +133,8 @@ public class RobotControl implements Runnable, IConnectionListener {
 	public void destroy() {
 		System.out.println("destroy()");
 		
-		this.tcp.sendMsg(new MsgDisconnect());
+		if(this.tcp.open)
+			this.tcp.sendMsg(new MsgDisconnect());
 		this.tcp.close();
 		this.udp.close();
 	}
@@ -139,7 +144,7 @@ public class RobotControl implements Runnable, IConnectionListener {
 		this.create();
 		this.isRunning = true;
 		long time = System.currentTimeMillis();
-		while(this.tcp.connecting && System.currentTimeMillis()-time < 1000)
+		while(this.tcp.connecting && System.currentTimeMillis()-time < 3000)
 			try {
 				Thread.sleep(10);
 			} catch (InterruptedException e) {

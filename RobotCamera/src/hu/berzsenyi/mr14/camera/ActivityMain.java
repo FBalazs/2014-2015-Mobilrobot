@@ -3,6 +3,7 @@ package hu.berzsenyi.mr14.camera;
 import java.net.InetSocketAddress;
 
 import hu.berzsenyi.mr14.ToByteArrayOutputStream;
+import hu.berzsenyi.mr14.bluetooth.BluetoothConnection;
 import hu.berzsenyi.mr14.net.IConnection;
 import hu.berzsenyi.mr14.net.IConnectionListener;
 import hu.berzsenyi.mr14.net.TCPConnection;
@@ -22,11 +23,12 @@ import android.util.Log;
 import android.widget.Toast;
 
 public class ActivityMain extends Activity implements PreviewCallback, IConnectionListener {
-	public static final int PORT = 8080;
+	public static final int PORT = 8080, TIMEOUT = 3000;
 	
 	public CameraHandler camera = new CameraHandler();
 	public TCPConnection tcp = new TCPConnection();
 	public UDPConnection udp = new UDPConnection();
+	public BluetoothConnection bt = new BluetoothConnection();
 	public long lastReceiveTime;
 	
 	public int streamQuality = 50;
@@ -43,10 +45,15 @@ public class ActivityMain extends Activity implements PreviewCallback, IConnecti
 			Toast.makeText(this, "Couldn't open camera!", Toast.LENGTH_LONG).show();
 			this.finish();
 		} else {
+//			Camera.Parameters params = this.camera.getParams();
+//			params.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);
+//			this.camera.setParams(params);
 			this.camera.addDefaultPreviewBuffer();
 			this.camera.camera.setPreviewCallbackWithBuffer(this);
 			this.camera.camera.startPreview();
 		}
+		
+		// TODO bt conn
 		
 		this.tcp.setListener(this);
 		this.tcp.listen(PORT);
@@ -59,7 +66,7 @@ public class ActivityMain extends Activity implements PreviewCallback, IConnecti
 		if(connection == this.tcp) {
 			this.lastReceiveTime = System.currentTimeMillis();
 			this.udp.setListener(this);
-			this.udp.connect(PORT, new InetSocketAddress(remoteAddr.getAddress(), PORT));
+			this.udp.connect(PORT, remoteAddr);
 		}
 	}
 
@@ -133,7 +140,7 @@ public class ActivityMain extends Activity implements PreviewCallback, IConnecti
 				Log.w(this.getClass().getName(), "msg=null");
 		}
 		
-		if(this.tcp.open && 1000 < System.currentTimeMillis()-this.lastReceiveTime) {
+		if(this.tcp.open && TIMEOUT < System.currentTimeMillis()-this.lastReceiveTime) {
 			Log.w(this.getClass().getName(), "Client timed out!");
 			this.tcp.close();
 		}
@@ -152,6 +159,7 @@ public class ActivityMain extends Activity implements PreviewCallback, IConnecti
 		Log.d(this.getClass().getName(), "onDestroy()");
 		super.onDestroy();
 		
+		this.bt.close();
 		this.tcp.close();
 		this.udp.close();
 		
